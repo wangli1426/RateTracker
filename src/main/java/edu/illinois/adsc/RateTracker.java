@@ -6,36 +6,76 @@ import java.util.Arrays;
  * This class is a plugin to track the rate.
  */
 public class RateTracker {
-    /* number of slides to keep in the history. the more slides, the smother the reported rate is. */
-    public final static int numOfSlides = 10;
+    /* number of slides to keep in the history. */
+    public final int _numOfSlides; // number of slides to keep in the history
 
-    public final static int slideSizeInMils = 100;
-    private final long[] _histogram = new long[numOfSlides];// an array storing the number of element for each time slide.
-    private long _latestSlideId;//SlideID upon last update to the histogram
-    private boolean _simulate;// use simulate ticks rather than system ticks
+    public final int _slideSizeInMils;
+    private final long[] _histograms;// an array storing the number of element for each time slide.
+    private long _latestSlideId;// slide id upon last update to the histograms
+    private boolean _simulate;// use simulated time rather than system time
 
     private long _ticks;// simulated ticks
 
-    public RateTracker() {
-        this(false);
+    /**
+     * @param validTimeWindowInMils events that happened before validTimeWindowInMils are not considered
+     *                        when reporting the rate.
+     * @param numOfSlides the number of time sildes to divide validTimeWindows. The more slides,
+     *                    the smother the reported results will be.
+     */
+    public RateTracker(int validTimeWindowInMils, int numOfSlides) {
+        this(validTimeWindowInMils, numOfSlides, false);
     }
 
-    public RateTracker(boolean simulate) {
+    /**
+     * Constructor
+     * @param validTimeWindowInMils events that happened before validTimeWindow are not considered
+     *                        when reporting the rate.
+     * @param numOfSlides the number of time sildes to divide validTimeWindows. The more slides,
+     *                    the smother the reported results will be.
+     * @param simulate set true if it use simulated time rather than system time for testing purpose.
+     */
+    public RateTracker(int validTimeWindowInMils, int numOfSlides, boolean simulate) {
+        _numOfSlides = Math.max(numOfSlides, 1);
+        _slideSizeInMils = validTimeWindowInMils / _numOfSlides;
+        assert(_slideSizeInMils > 1);
         _simulate = simulate;
         _ticks = 0;
         _latestSlideId = getCurrentWindowId();
-        Arrays.fill(_histogram, 0);
+        _histograms = new long[_numOfSlides];
+        Arrays.fill(_histograms, 0);
+    }
+    /**
+     * Notify the tracker upon new arrivals
+     *
+     * @param count number of arrivals
+     */
+    public final void notify(long count) {
+        updateHistograms();
+        _histograms[_numOfSlides - 1] += count;
     }
 
-    public static void main(String[] args) {
-        RateTracker rt = new RateTracker(true);
-        rt.notify(1);
-        float r1 = rt.reportRate();
-        rt._ticks += RateTracker.slideSizeInMils;
-        rt.notify(1);
-        float r2 = rt.reportRate();
-        System.out.print("r1:" + r1 + "r2:" + r2);
-        System.out.print((r2 == r1 * 2));
+    /**
+     * Return the average rate in slides.
+     *
+     * @return the average rate
+     */
+    public final float reportRate() {
+        long sum = 0;
+        long duration = _numOfSlides * _slideSizeInMils;
+        updateHistograms();
+        for (long e : _histograms) {
+            sum += e;
+        }
+
+        return sum / (float) duration;
+    }
+
+    public int get_slideSizeInMils() {
+        return _slideSizeInMils;
+    }
+
+    public int get_numOfSlides() {
+        return _numOfSlides;
     }
 
     /**
@@ -56,32 +96,6 @@ public class RateTracker {
         this._ticks = ticks;
     }
 
-    /**
-     * Notify the tracker upon new arrivals
-     *
-     * @param count number of arrivals
-     */
-    public final void notify(int count) {
-        updateHistorgrams();
-        _histogram[numOfSlides - 1] += count;
-    }
-
-    /**
-     * Return the average rate in slides.
-     *
-     * @return the average rate
-     */
-    public final float reportRate() {
-        long sum = 0;
-        long duration = numOfSlides * slideSizeInMils;
-        updateHistorgrams();
-        for (long e : _histogram) {
-            sum += e;
-        }
-
-        return sum / (float) duration;
-    }
-
     private long getCurrentWindowId() {
         return (getSlideId(getCurrentSystemTime()));
     }
@@ -94,7 +108,7 @@ public class RateTracker {
     }
 
     /* update the histograms to the current slide id*/
-    private void updateHistorgrams() {
+    private void updateHistograms() {
         long windowsDiff, retainedWindows;
 
         windowsDiff = getCurrentWindowId() - _latestSlideId;
@@ -102,13 +116,13 @@ public class RateTracker {
         if (windowsDiff == 0)
             return;
 
-        retainedWindows = Math.max(0, numOfSlides - windowsDiff);
+        retainedWindows = Math.max(0, _numOfSlides - windowsDiff);
 
-        for (int i = 0; i < numOfSlides; i++) {
+        for (int i = 0; i < _numOfSlides; i++) {
             if (i < retainedWindows)
-                _histogram[i] = _histogram[i + (int) windowsDiff];
+                _histograms[i] = _histograms[i + (int) windowsDiff];
             else
-                _histogram[i] = 0;
+                _histograms[i] = 0;
         }
 
         _latestSlideId = getCurrentWindowId();
@@ -116,6 +130,6 @@ public class RateTracker {
     }
 
     private long getSlideId(long ticks) {
-        return ticks / slideSizeInMils;
+        return ticks / _slideSizeInMils;
     }
 }
