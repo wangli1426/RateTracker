@@ -67,7 +67,7 @@ public class RateTracker {
             sum += e;
         }
 
-        return sum / (float) duration;
+        return sum / (float) duration * 1000;
     }
 
     public int get_slideSizeInMils() {
