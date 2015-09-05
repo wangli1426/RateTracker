@@ -49,7 +49,7 @@ public class RateTracker {
      *
      * @param count number of arrivals
      */
-    public final void notify(long count) {
+    public void notify(long count) {
         updateHistograms();
         _histograms[_numOfSlides - 1] += count;
     }

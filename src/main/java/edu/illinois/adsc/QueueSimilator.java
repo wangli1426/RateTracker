@@ -12,11 +12,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class QueueSimilator {
     final private Queue _queue;
-    final private RateTracker _rateTracker;
+    final private FastRateTracker _rateTracker;
 
     public QueueSimilator() {
         _queue = new ConcurrentLinkedQueue<Integer>();
-        _rateTracker = new RateTracker(200, 10);
+        _rateTracker = new FastRateTracker(10000, 10);
     }
 
     public void produce(long e) {
@@ -119,7 +119,21 @@ public class QueueSimilator {
         }
     }
     static public void main(String[] args){
+
+        FastRateTracker rt = new FastRateTracker(1000,10);
+
+        long start = System.currentTimeMillis();
+        for(int i=0; i<100000000; i++) {
+            rt.notify(System.currentTimeMillis()%2);
+        }
+
+        System.out.println(100000000 / (System.currentTimeMillis() - start) *1000);
+
+
+
+
         try{
+            Thread.sleep(1000);
             QueueSimilator queueSimulator = new QueueSimilator();
             Thread producer = queueSimulator.createProducer(1000);
             Thread consumer = queueSimulator.createConsumer(1000);
