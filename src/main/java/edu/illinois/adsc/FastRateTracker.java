@@ -1,10 +1,6 @@
 package edu.illinois.adsc;
 
-import sun.awt.Mutex;
-
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Created by Robert on 9/5/15.
@@ -15,9 +11,8 @@ public class FastRateTracker{
 
     public final int _slideSizeInMils;
     private final long[] _histograms;// an array storing the number of element for each time slide.
-    private boolean _simulate;// use simulated time rather than system time
 
-    private long _ticks;// simulated ticks
+    private int _currentValidSlideNum;
 
     private Timer _timer;
 
@@ -36,7 +31,10 @@ public class FastRateTracker{
         _histograms = new long[_numOfSlides];
         Arrays.fill(_histograms,0L);
         _timer = new Timer();
-        _timer.scheduleAtFixedRate(new Fresher(),_slideSizeInMils,_slideSizeInMils);
+        if(!simulate) {
+            _timer.scheduleAtFixedRate(new Fresher(), _slideSizeInMils, _slideSizeInMils);
+        }
+        _currentValidSlideNum = 1;
     }
 
     public void notify(long count) {
@@ -50,12 +48,20 @@ public class FastRateTracker{
      */
     public final float reportRate() {
         long sum = 0;
-        long duration = _numOfSlides * _slideSizeInMils;
-        for (long e : _histograms) {
-            sum += e;
+        long duration = _currentValidSlideNum * _slideSizeInMils;
+        for(int i=_numOfSlides - _currentValidSlideNum; i < _numOfSlides; i++ ){
+            sum += _histograms[i];
         }
 
         return sum / (float) duration * 1000;
+    }
+
+    public final void forceUpdateSlides(int numToEclipse) {
+
+        for(int i=0; i< numToEclipse; i++) {
+            updateSlides();
+        }
+
     }
 
     private void updateSlides(){
@@ -65,6 +71,8 @@ public class FastRateTracker{
         }
 
         _histograms[_histograms.length - 1] = 0;
+
+        _currentValidSlideNum = Math.min(_currentValidSlideNum + 1, _numOfSlides);
     }
 
     private class Fresher extends TimerTask {
@@ -72,5 +80,6 @@ public class FastRateTracker{
             updateSlides();
         }
     }
+
 
 }

@@ -120,14 +120,14 @@ public class QueueSimilator {
     }
     static public void main(String[] args){
 
-        FastRateTracker rt = new FastRateTracker(1000,10);
+        FastRateTracker rt = new FastRateTracker(10000,10);
 
         long start = System.currentTimeMillis();
-        for(int i=0; i<100000000; i++) {
+        for(int i=0; i<1000000; i++) {
             rt.notify(System.currentTimeMillis()%2);
         }
 
-        System.out.println(100000000 / (System.currentTimeMillis() - start) *1000);
+        System.out.println(1000000 / (System.currentTimeMillis() - start) *1000);
 
 
 
