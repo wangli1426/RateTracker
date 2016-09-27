@@ -16,7 +16,9 @@ public class RateTrackerTest extends TestCase {
         RateTracker rt = new RateTracker(10000, 10, true);
         rt.notify(10);
         rt.set_ticks(rt.get_ticks() + rt.get_numOfSlides() * rt.get_slideSizeInMils());
-
+        System.err.println("ERROR: Travis is stupid!");
+        System.err.println("ERR: Travis is stupid!");
+        
         assert (rt.reportRate() == 0);
     }
 
