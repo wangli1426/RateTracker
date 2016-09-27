@@ -28,7 +28,7 @@ public class RateTrackerTest extends TestCase {
         rt.notify(1);
         float r2 = rt.reportRate();
 
-        assert (2 * r1 == r2);
+        assert (2 * r1 == r2 - 100);
     }
 
     public void testEclipsedNineWindows() {
